@@ -1,0 +1,205 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class SnakeHead : MonoBehaviour //Start , update를 call(호출)할것이다. 를 판가름하는 녀석.
+{
+    public GameObject bodyPrefab;
+
+    public GameObject starCandyPrefab;
+    //public 이랑 private 는 복잡도를 낮추기위한 방법중 하나다.캡슐화
+    //public 들이랑 private들의 위치를 정해두면, 읽는 시간을 줄일 수 있다.
+    //순차검색을 하지 않도록!
+    //game object랑 profab 구분을 잘 해야한다.
+
+    List<GameObject> bodies;
+    List<GameObject> candies;
+    //변수 하나로 여러 오브젝트를 관리할 수 있게 되었다.
+
+    GameObject copyStarcandies;
+
+    Vector3 dir = new Vector3(0.0f, 1.0f, 0.0f);
+    //뱀의 초기 방향값
+
+    bool hasStarted = false;
+    //Started는 거짓이다. bool의 초기값은 false다. 변수명 만으로도 bool인지 알 수 있도록.
+
+    float time = 0.0f;
+
+    public float moveInterval = 0.3f;
+    //변수 선언은(declaration) 먼저 한다.
+    //null = new (operator) class type 객체를 생성할 때 쓴다.
+
+    //GameObject[] array; 배열이다. 선언부에서는 지시부(함수영역)에서처럼 가져다 쓸 수 없다.
+     
+    void Start()
+    {
+        bodies = new List<GameObject>
+        {
+            Instantiate(bodyPrefab),
+            Instantiate(bodyPrefab),
+            Instantiate(bodyPrefab)
+        };
+        //생성자 Constructor
+
+        candies = new List<GameObject>
+        {
+            Instantiate(starCandyPrefab),
+            Instantiate(starCandyPrefab),
+            Instantiate(starCandyPrefab),
+            Instantiate(starCandyPrefab),
+            Instantiate(starCandyPrefab)
+        };
+
+        //나는 Instantiatie 함수를 이용해서, Starcandy의 원본을 복제했고,
+
+        for (int i = 0; i < 5; i++)
+         {
+            float candiesXPos = Random.Range(-9.0f, 9.0f);
+            float candiesYPos = Random.Range(-9.0f, 9.0f);
+            candiesXPos = Mathf.Round(candiesXPos);
+            candiesYPos = Mathf.Round(candiesYPos);
+           candies[i].transform.position = new Vector3(candiesXPos, candiesYPos, 0);
+        }
+        //Range가 내가 정수를 넣어도 소수까지 가져가네.. 그럼..
+
+
+        for (int i = 0; i < 3 ; i++ ) //5-0 다섯번 반복될 코드다.(update에 있지 않은 이상) 무한루프는 쓰면 안됨..큰일난다.
+        {
+            bodies[i].transform.position = new Vector3(0.0f, -i - 1.0f, 0.0f);
+            float scaleValue = 0.9f - i * 0.1f;
+            bodies[i].transform.localScale = new Vector3(scaleValue, scaleValue, scaleValue);
+        }
+        
+        //배열에 접근하는 방식중 배열 첨자를 통한 접근 (index를 통한) index는 0부터 시작한다.
+        //array 랑 list 차이는 나중에.. 일단 둘다 같은거라고 생각을 하자!
+        //패턴발견
+    }
+
+    void Update() //이벤트 함수 (Event Function)
+    {
+
+        //뱀 위로 방향 바꾸기
+        if (Input.GetKeyDown(KeyCode.W))
+        {
+            dir = new Vector3(0.0f, 1.0f, 0.0f);
+        }
+        //뱀 아래로 방향 바꾸기
+        if (Input.GetKeyDown(KeyCode.S))
+        {
+            dir = new Vector3(0.0f, -1.0f, 0.0f);
+        }
+        //뱀 왼쪽으로 방향 바꾸기
+        if (Input.GetKeyDown(KeyCode.A))
+        {
+            dir = new Vector3(-1.0f, 0.0f, 0.0f);
+        }
+        //뱀 오른쪽으로 방향 바꾸기
+        if (Input.GetKeyDown(KeyCode.D))
+        {
+            dir = new Vector3(1.0f, 0.0f, 0.0f);
+        }
+        //만약 started가 true이면, dir에 deltatime을 곱한것을 계속 더한다.
+        if (hasStarted == true)
+        {
+            time += Time.deltaTime;//프레임이 그려지는 시간..이랑 같네.. 결국 실제 시간이랑 같네. frame마다 실행 하지 않고,최대한 현실세계의 초랑 맞춰야할 때.
+        }
+        //z를 눌렀다면 Started가 참일 경우에 Started는 거짓이다.
+        //이 외의 결과라면(Started가 거짓일 경우) Started는 참이되며 dir의 위치는 0,0,0이 된다.
+        if (Input.GetKeyUp(KeyCode.Z))
+        {
+            if (hasStarted == true)
+            {
+                hasStarted = false;
+            }
+            else
+            {
+                hasStarted = true;
+                transform.position = new Vector3(0, 0, 0);
+                for (int i = 1; i < 4; i++)
+                {
+                    bodies[i - 1].transform.position = new Vector3(0, -i, 0);
+                }
+            }
+        }
+
+        //0.5초가 넘으면 1씩 움직이게 하고싶다.
+        //0.5초를 어떻게 세지?
+        //델타타임이 업데이트 한번 돌때 시간인데
+        //델타타임을 어떻게하면 합칠 수 있을까?
+        //48번쨰 줄처럼 해보자. 변수명은 camalCase(낙타표기법)
+
+        if (time >= moveInterval)
+        {
+            time = 0;
+
+            for (int i = bodies.Count - 1; i > 0; i--)
+            {
+                bodies[i].transform.position = bodies[i - 1].transform.position;
+            }
+
+            //=은 대입. 우변에 있는값을 좌변에 복사해서 넣는다
+            bodies[0].transform.position = transform.position;
+            transform.position += dir;
+        }
+
+        if (transform.position.x <= -10 || transform.position.x >= 10)
+        {
+            hasStarted = false;
+
+            transform.position = new Vector3(0, 0, 0);
+            for (int i = 1; i < bodies.Count + 1; i++)
+            {
+                bodies[i - 1].transform.position = new Vector3(0, -i, 0);
+            }
+        }
+
+        if (transform.position.y <= -10 || transform.position.y >= 10)
+        {
+            hasStarted = false;
+            transform.position = new Vector3(0, 0, 0);
+            for (int i = 1; i < bodies.Count + 1; i++)
+            {
+                bodies[i - 1].transform.position = new Vector3(0, -i, 0);
+            }
+        }
+
+        for (int i = 0; i < 5; i++)
+        {
+            if (transform.position == candies[i].transform.position && candies[i].activeInHierarchy)
+        {
+                candies[i].SetActive(false);
+                //1)새로운 뱀바디 생성.
+                GameObject newBody = Instantiate(bodyPrefab);
+                Vector3 lastBodyPos = bodies[bodies.Count - 1].transform.position;
+               // Vector3 lastBodyScale = bodies[bodies.Count - 1].transform.localScale;
+                newBody.transform.position = lastBodyPos - dir;
+
+               // float newScale = lastBodyScale.x - 0.1f;
+              //  newBody.transform.localScale = new Vector3(newScale, newScale, newScale);
+                bodies.Add(newBody);
+            }
+        }
+
+        if (bodies.Count == 5 && )
+        {
+            Instantiate(starCandyPrefab);
+        }
+
+        // 별사탕 재생성
+
+        // 예를들어서 별사탕이 5개면, 2개먹었을 때, 씬에 3개의 Active상태의 별사탕이 있다면, 하나를 생성하도록 해보자.
+
+        // 씬에서 엑티브상태인 오브젝트를 검출할수는 있는데, 이거의 카운트까지 셀 수 있는지는 미지수.
+
+        // 스케일 줄이는 처리의 근본적인 문제점을 고치기 위해서 끝에서부터 3번째 까지의 몸통의 크기만 -0.1 줄이고 싶다면.
+
+        // bodies arry의 뒤의 번호를 셀 수 있나?
+
+        // 자신의 몸통이랑 부딪혔을 때 죽는거 
+        // 현재 뱀 머리에 달려있는 모든 몸통들의 위치값들 중, 하나라도 뱀 머리의 위치가 일치하게된다면 Started를 false로 하면 되는부분인데,
+
+        //ealry return.
+
+    }
+}
